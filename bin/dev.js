@@ -1,36 +1,37 @@
 const dotenv = require('dotenv');
 const express = require('express');
-const { handler } = require('../dist/index');
+const { handler } = require('../dist/tool-call');
 
 dotenv.config();
 
 const app = express();
 
-const { ENV_VAR_ONE, PORT } = process.env;
+const { LINKUP_API_KEY, PORT } = process.env;
 
-if(ENV_VAR_ONE === undefined) {
-    console.log('`ENV_VAR_ONE` not set. Copy .env.example to .env first.');
+if(LINKUP_API_KEY === undefined) {
+    console.log('`LINKUP_API_KEY` not set. Please set your Linkup API key.');
     process.exit(1);
 }
 
 app.get('/', async (req, res) => {
-    const { EXAMPLE_PARAM_ONE, EXAMPLE_PARAM_TWO } = req.query;
+    const { query, depth, outputType, includeImages, fromDate, toDate, includeDomains, excludeDomains } = req.query;
 
-    const event = {
-        body: JSON.stringify({
-            args: {
-                EXAMPLE_PARAM_ONE,
-                EXAMPLE_PARAM_TWO
-            },
-            secrets: {
-                ENV_VAR_ONE
-            }
-        })
+    try {
+        const result = await handler({
+            query: query || 'What is the capital of France?',
+            depth: depth || 'standard',
+            outputType: outputType || 'sourcedAnswer',
+            includeImages: includeImages === 'true',
+            fromDate: fromDate,
+            toDate: toDate,
+            includeDomains: includeDomains ? includeDomains.split(',') : undefined,
+            excludeDomains: excludeDomains ? excludeDomains.split(',') : undefined
+        });
+
+        res.status(200).send(result);
+    } catch (error) {
+        res.status(500).send(`Error: ${error.message}`);
     }
-
-    const result = await handler(event)
-
-    res.status(result.statusCode).send(result.body);
 });
 
 const port = PORT || 3000;
