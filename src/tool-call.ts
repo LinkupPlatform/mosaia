@@ -7,10 +7,10 @@ import {
   } from './index';
   
   /**
-   * Main entry point for the Mosaia tool
-   * This function is called when an agent invokes the tool
+   * Tool call function that performs the Linkup search
+   * This function is called by the handler with parsed parameters
    */
-  export async function handler(params: LinkupSearchParams): Promise<string> {
+  export default async function toolCall(params: LinkupSearchParams): Promise<string> {
     try {
       const result = await linkupSearch(params);
       const outputType = params.outputType || 'sourcedAnswer';
@@ -88,6 +88,3 @@ import {
       return 'An unknown error occurred while searching';
     }
   }
-  
-  // Export as default for Mosaia
-  export default handler;
