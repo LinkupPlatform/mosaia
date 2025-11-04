@@ -1,6 +1,6 @@
 const dotenv = require('dotenv');
 const express = require('express');
-const { handler } = require('../dist/tool-call');
+const toolCall = require('../dist/tool-call').default;
 
 dotenv.config();
 
@@ -17,7 +17,7 @@ app.get('/', async (req, res) => {
     const { query, depth, outputType, includeImages, fromDate, toDate, includeDomains, excludeDomains } = req.query;
 
     try {
-        const result = await handler({
+        const result = await toolCall({
             query: query || 'What is the capital of France?',
             depth: depth || 'standard',
             outputType: outputType || 'sourcedAnswer',

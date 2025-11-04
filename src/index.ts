@@ -1,3 +1,14 @@
+import toolCall from "./tool-call";
+
+type RawEvent = {
+    body: string;
+}
+
+type ParsedEvent = {
+    args: Record<string, string>;
+    secrets: Record<string, string>;
+}
+
 export interface LinkupSearchParams {
     query: string;
     depth?: 'standard' | 'deep';
@@ -151,3 +162,60 @@ export interface LinkupSearchParams {
       throw error;
     }
   }
+
+export async function handler(event: RawEvent) {
+    const {
+        args,
+        secrets: {
+            LINKUP_API_KEY
+        }
+    } = JSON.parse(event.body) as ParsedEvent;
+
+    // Set the API key from secrets as an environment variable
+    if (LINKUP_API_KEY) {
+        process.env.LINKUP_API_KEY = LINKUP_API_KEY;
+    }
+
+    try {
+        // Parse search parameters from args
+        const searchParams: LinkupSearchParams = {
+            query: args.query || '',
+            depth: args.depth as 'standard' | 'deep' | undefined,
+            outputType: args.outputType as 'searchResults' | 'sourcedAnswer' | 'structured' | undefined,
+            structuredOutputSchema: args.structuredOutputSchema,
+            includeImages: args.includeImages === 'true' || args.includeImages === '1',
+            fromDate: args.fromDate,
+            toDate: args.toDate,
+            includeDomains: args.includeDomains ? JSON.parse(args.includeDomains) : undefined,
+            excludeDomains: args.excludeDomains ? JSON.parse(args.excludeDomains) : undefined,
+        };
+
+        // Validate required parameter
+        if (!searchParams.query) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify('Missing required parameter: query'),
+            };
+        }
+
+        const result = await toolCall(searchParams);
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify(result),
+        };
+    } catch (error: unknown) {
+        let message = '';
+
+        if (error instanceof Error) {
+            message = error.message;
+        } else {
+            message = 'Unknown error';
+        }
+
+        return {
+            statusCode: 500,
+            body: JSON.stringify(message),
+        };
+    }
+}
